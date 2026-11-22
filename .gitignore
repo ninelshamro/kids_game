@@ -1,0 +1,18 @@
+# OS / editor clutter
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
+
+# Local test output
+screenshots/
+*.png.tmp
+__pycache__/
+node_modules/
+
+# Archives
+*.zip
+
+# Local notes for Claude (not published)
+CLAUDE.md
