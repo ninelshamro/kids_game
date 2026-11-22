@@ -210,6 +210,42 @@
   .confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:11}
   .confetti i{position:absolute;top:-20px;width:12px;height:18px;border-radius:3px;animation:fall linear forwards}
   @keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+  /* ---------- squirrel (mushroom walk) ---------- */
+  .sq-screen{display:none;position:fixed;inset:0;background:linear-gradient(#6E5FE8 0 50%,#5FAE62 50% 100%)}
+  body[data-view=squirrel] .sq-screen{display:block}
+  body[data-view=squirrel]{overflow:hidden}
+  #sqScene,#sqScene svg{width:100%;height:100%;display:block}
+  #sqScene svg{touch-action:none;cursor:pointer}
+  .sq-trick,.sq-bob,.sq-tail,.mush-in,.sq-house,.sq-board{transform-box:fill-box}
+  #sqPos{cursor:pointer}
+  .sq-walk .sq-bob{animation:sqHop .34s ease-in-out infinite}
+  @keyframes sqHop{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}
+  .sq-tail{transform-origin:85% 95%;animation:sqTail 2.4s ease-in-out infinite}
+  .sq-walk .sq-tail{animation-duration:.68s}
+  @keyframes sqTail{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(7deg)}}
+  .sq-trick{transform-origin:50% 60%}
+  .sq-trick.flip{animation:sqFlip .85s ease}
+  @keyframes sqFlip{0%{transform:translateY(0) rotate(0)}30%{transform:translateY(-90px) rotate(-120deg)}65%{transform:translateY(-90px) rotate(-300deg)}100%{transform:translateY(0) rotate(-360deg)}}
+  .sq-trick.pick{transform-origin:70% 100%;animation:sqPick .5s ease}
+  @keyframes sqPick{0%,100%{transform:rotate(0)}45%{transform:rotate(16deg) translateY(4px)}}
+  .sq-trick.no{transform-origin:50% 100%;animation:tno .55s ease 2}
+  .sq-trick.dance{transform-origin:50% 100%;animation:sqDance .6s ease 3}
+  @keyframes sqDance{0%,50%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-44px) rotate(-10deg)}75%{transform:translateY(-44px) rotate(10deg)}}
+  .mush{cursor:pointer}
+  .mush-in{transform-origin:50% 100%;animation:mushSway 3s ease-in-out infinite}
+  @keyframes mushSway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+  .mush-in.no{animation:nope .5s ease}
+  .mush-in.call{animation:mushCall 1s ease}
+  @keyframes mushCall{0%,40%,80%,100%{transform:translateY(0)}20%{transform:translateY(-26px)}60%{transform:translateY(-16px)}}
+  .sq-house{transform-origin:50% 100%;cursor:pointer}
+  .sq-house.shake{animation:shake .45s ease}
+  .sq-board{transform-origin:50% 50%}
+  .sq-board.bounce{animation:bounce .45s ease}
+  .sq-tw{animation:sqTw 2.6s ease-in-out infinite}
+  @keyframes sqTw{0%,100%{opacity:.25}50%{opacity:1}}
+  .sq-ff{pointer-events:none;animation:sqFF 5s ease-in-out infinite}
+  @keyframes sqFF{0%,100%{transform:translate(0,0);opacity:.5}30%{transform:translate(14px,-18px);opacity:1}60%{transform:translate(-10px,-8px);opacity:.7}}
+  .sq-front{pointer-events:none}
   /* ---------- halves (find the colour) ---------- */
   .halves-screen{display:none;position:fixed;inset:0;grid-template-rows:auto 1fr auto;gap:10px;padding:10px}
   body[data-view=halves] .halves-screen{display:grid}
@@ -383,6 +419,22 @@
     </div>
   </div>
   <div class="confetti" id="confetti"></div>
+</section>
+
+<section class="sq-screen">
+  <div id="sqScene"></div>
+  <button class="round-btn corner-back" data-go="">← Меню</button>
+  <div class="win" id="sqWin">
+    <div class="win-card">
+      <div class="win-emoji">🐿️🍄🍄🍄</div>
+      <h2>Ура! Білочка зібрала всі грибочки!</h2>
+      <div class="win-btns">
+        <button class="go" id="sqAgain">Ще раз 🔄</button>
+        <button class="round-btn" data-go="">Меню</button>
+      </div>
+    </div>
+  </div>
+  <div class="confetti" id="sqConfetti"></div>
 </section>
 
 <main class="hpick">
@@ -1388,6 +1440,292 @@ eggSvg.addEventListener('pointerdown', e=>{
 });
 document.getElementById('eggAgain').addEventListener('click', newEggGame);
 
+/* ===== Squirrel: mushroom walk in a fairy forest ===== */
+const SQO = 'stroke="#3B2A4A" stroke-width="3" stroke-linejoin="round"';
+// mushrooms: origin at the bottom centre of the stem, about 60 units tall
+const MUSH_TYPES = [
+  {name:'Боровик', art:`
+    <path d="M-13 0 Q-18 -16 -11 -30 L11 -30 Q18 -16 13 0 Q0 5 -13 0 Z" fill="#F3E6CF" ${SQO}/>
+    <path d="M-31 -26 Q-31 -58 0 -60 Q31 -58 31 -26 Q0 -18 -31 -26 Z" fill="#9C5B2E" ${SQO}/>
+    <ellipse cx="-12" cy="-46" rx="8" ry="4.5" fill="#fff" opacity=".35"/>`},
+  {name:'Лисичка', art:`
+    <path d="M-8 0 Q-6 -16 -24 -34 Q-29 -41 -18 -43 Q0 -37 18 -43 Q29 -41 24 -34 Q6 -16 8 0 Q0 4 -8 0 Z" fill="#FFB02E" ${SQO}/>
+    <path d="M-3 -6 Q-5 -20 -14 -33 M3 -6 Q5 -20 14 -33 M0 -6 V-35" fill="none" stroke="#E08A10" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M-20 -41 Q0 -33 20 -41" fill="none" stroke="#FFD57A" stroke-width="3" stroke-linecap="round"/>`},
+  {name:'Сироїжка', art:`
+    <path d="M-10 0 Q-12 -14 -9 -26 L9 -26 Q12 -14 10 0 Q0 4 -10 0 Z" fill="#fff" ${SQO}/>
+    <path d="M-31 -23 Q-27 -48 0 -48 Q27 -48 31 -23 Q0 -18 -31 -23 Z" fill="#FF6F9C" ${SQO}/>
+    <ellipse cx="-11" cy="-39" rx="8" ry="3.5" fill="#fff" opacity=".4"/>`},
+  {name:'Підберезник', art:`
+    <path d="M-9 0 Q-11 -24 -7 -40 L7 -40 Q11 -24 9 0 Q0 4 -9 0 Z" fill="#F4EFE8" ${SQO}/>
+    <path d="M-5 -8 h3 M3 -14 h3 M-6 -22 h3 M2 -29 h3 M-4 -35 h3" stroke="#3B2A4A" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M-27 -36 Q-27 -64 0 -64 Q27 -64 27 -36 Q0 -29 -27 -36 Z" fill="#C77A3A" ${SQO}/>
+    <ellipse cx="-10" cy="-52" rx="7" ry="4" fill="#fff" opacity=".35"/>`},
+];
+const AGARIC = `
+  <path d="M-10 0 Q-12 -20 -8 -34 L8 -34 Q12 -20 10 0 Q0 4 -10 0 Z" fill="#fff" ${SQO}/>
+  <path d="M-12 -24 Q0 -18 12 -24 L10 -19 Q0 -13 -10 -19 Z" fill="#fff" stroke="#3B2A4A" stroke-width="2.4" stroke-linejoin="round"/>
+  <path d="M-32 -30 Q-32 -64 0 -64 Q32 -64 32 -30 Q0 -22 -32 -30 Z" fill="#E8343B" ${SQO}/>
+  ${[[-16,-45,4.5],[0,-55,5],[16,-45,4.5],[-3,-38,3.5],[22,-35,3],[-24,-35,3]].map(([x,y,r])=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#fff"/>`).join('')}`;
+const MUSH_SIL = 'M-11 0 Q-14 -16 -9 -28 L-30 -28 Q-30 -58 0 -58 Q30 -58 30 -28 L9 -28 Q14 -16 11 0 Z';
+
+// the squirrel in profile, facing right, feet at y=0
+const SQUIRREL = `
+  <g class="sq-tail">
+    <path d="M-16 -26 C-62 -22 -84 -74 -62 -112 C-50 -136 -12 -140 -6 -116 C-2 -100 -22 -98 -30 -86 C-42 -66 -26 -46 -10 -40 Z" fill="#C46A2B" stroke="#3B2A4A" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M-56 -106 C-46 -126 -20 -128 -16 -114" fill="none" stroke="#E89A5C" stroke-width="5" stroke-linecap="round"/>
+    <path d="M-64 -62 C-58 -46 -42 -36 -28 -34" fill="none" stroke="#E89A5C" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  <ellipse cx="-4" cy="-4" rx="17" ry="6" fill="#A9541D" ${SQO}/>
+  <ellipse cx="-6" cy="-24" rx="22" ry="20" fill="#D9762F" ${SQO}/>
+  <path d="M16 -28 L23 -6" stroke="#3B2A4A" stroke-width="12" stroke-linecap="round"/>
+  <path d="M16 -28 L23 -6" stroke="#D9762F" stroke-width="6" stroke-linecap="round"/>
+  <ellipse cx="27" cy="-4" rx="11" ry="5" fill="#A9541D" ${SQO}/>
+  <ellipse cx="10" cy="-42" rx="24" ry="30" transform="rotate(20 10 -42)" fill="#E0843C" stroke="#3B2A4A" stroke-width="3.5"/>
+  <ellipse cx="21" cy="-42" rx="11" ry="20" transform="rotate(20 21 -42)" fill="#F7D9B5"/>
+  <ellipse cx="34" cy="-50" rx="7" ry="9" fill="#D9762F" ${SQO}/>
+  <path d="M30 -98 L36 -124 L46 -98 Z" fill="#B85E22" ${SQO}/>
+  <path d="M16 -96 L14 -124 L34 -102 Z" fill="#C46A2B" ${SQO}/>
+  <path d="M19 -101 L18 -116 L28 -104 Z" fill="#FFC4C9"/>
+  <path d="M14 -124 L10 -134 M14 -124 L19 -133 M36 -124 L34 -134 M36 -124 L41 -132" stroke="#7A3A14" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="32" cy="-78" r="24" fill="#E0843C" stroke="#3B2A4A" stroke-width="3.5"/>
+  <ellipse cx="52" cy="-71" rx="14" ry="10" fill="#F7D9B5" ${SQO}/>
+  <ellipse cx="63" cy="-75" rx="4.5" ry="3.6" fill="#2B2238"/>
+  <ellipse cx="41" cy="-85" rx="4.6" ry="5.6" fill="#2B2238"/><circle cx="42.6" cy="-87" r="1.7" fill="#fff"/>
+  <circle cx="37" cy="-70" r="5" fill="#FFB7C2"/>
+  <path d="M53 -65 q4 3.5 9 0" fill="none" stroke="#3B2A4A" stroke-width="2.4" stroke-linecap="round"/>`;
+
+function sparkle(x,y,r){ return `M${x} ${y-r} Q${x} ${y} ${x+r} ${y} Q${x} ${y} ${x} ${y+r} Q${x} ${y} ${x-r} ${y} Q${x} ${y} ${x} ${y-r} Z`; }
+function farTrees(y, step, rMin, rVar, fill, seed){
+  let s = seed, out = '';
+  for(let x=-20; x<=1030; x+=step){ s = (s*9301+49297)%233280; const r = rMin + s/233280*rVar; out += `<circle cx="${x}" cy="${(y-r*.4).toFixed(1)}" r="${r.toFixed(1)}"/>`; }
+  return `<g fill="${fill}">${out}<rect x="0" y="${y-12}" width="1000" height="${712-y}"/></g>`;
+}
+const tuft = (x,y,s,c) => `<path d="M${x-14*s} ${y} Q${x-12*s} ${y-22*s} ${x-20*s} ${y-34*s} Q${x-4*s} ${y-22*s} ${x-2*s} ${y-8*s} Q${x} ${y-30*s} ${x+4*s} ${y-44*s} Q${x+10*s} ${y-24*s} ${x+6*s} ${y-8*s} Q${x+12*s} ${y-22*s} ${x+24*s} ${y-30*s} Q${x+16*s} ${y-14*s} ${x+14*s} ${y} Z" fill="${c}" stroke="${shade(c,40)}" stroke-width="2" stroke-linejoin="round"/>`;
+
+const SQ_SPOTS = [[600,560],[290,545],[250,665],[380,620],[420,505],[510,565],[560,665],[690,515],[700,620],[800,565],[860,658],[620,470]];
+const SQ_BAD = [[345,480],[950,612]];
+const SQ_N = 8;
+const SQ_SLOT_X = i => 304 + i*56, SQ_SLOT_Y = 80;
+const sqScale = y => .75 + (y-460)/200*.45;
+
+const sqScene = `<svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet" id="sqSvg">
+  <defs>
+    <linearGradient id="sqSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6E5FE8"/><stop offset=".6" stop-color="#B593F0"/><stop offset="1" stop-color="#FFC6DD"/></linearGradient>
+    <radialGradient id="sqGlow"><stop offset="0" stop-color="#FFF8C0"/><stop offset=".3" stop-color="#FFE873" stop-opacity=".8"/><stop offset="1" stop-color="#FFE873" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="1000" height="700" fill="url(#sqSky)"/>
+  <circle cx="800" cy="86" r="74" fill="#FFF3C4" opacity=".22"/>
+  <circle cx="800" cy="86" r="36" fill="#FFF3C4"/>
+  <circle cx="788" cy="78" r="7" fill="#F2DF9A"/><circle cx="812" cy="98" r="5" fill="#F2DF9A"/><circle cx="808" cy="72" r="3.5" fill="#F2DF9A"/>
+  ${[[230,128,9],[330,150,7],[460,132,8],[600,160,7],[700,124,9],[760,196,6],[380,214,6],[540,206,8],[660,244,6],[290,250,5],[440,270,5]].map(([x,y,r],k)=>`<path class="sq-tw" style="animation-delay:${(-k*.37).toFixed(2)}s" d="${sparkle(x,y,r)}" fill="#FFF7C2"/>`).join('')}
+  ${farTrees(352, 58, 36, 26, '#A28FE8', 7)}
+  ${farTrees(398, 74, 32, 22, '#8775D6', 3)}
+  <path d="M0 430 Q200 392 420 414 T800 404 T1000 396 V700 H0 Z" fill="#4E9E88"/>
+  ${[[330,.8],[420,1],[515,.72],[600,.95],[700,.82],[790,1]].map(([x,s],k)=>pine(x,446,s,k%2?'#3F8F7A':'#4FA48A')).join('')}
+  <path d="M0 452 Q250 430 500 448 T1000 444 V700 H0 Z" fill="#7CCB79"/>
+  <path d="M0 568 Q500 546 1000 568 V700 H0 Z" fill="#74C271"/>
+  <path d="M440 700 C470 640 600 622 590 572 C582 524 520 500 560 448 L590 448 C564 500 640 522 650 572 C660 632 560 662 584 700 Z" fill="#EBD9A8"/>
+  ${[[120,612,'#8FD3FF'],[330,585,'#FF8FC7'],[470,668,'#fff'],[640,648,'#8FD3FF'],[760,600,'#FF8FC7'],[905,668,'#fff'],[232,518,'#8FD3FF'],[540,498,'#fff'],[825,500,'#FF8FC7'],[40,680,'#FF8FC7'],[150,520,'#fff']].map(([x,y,c])=>flower(x,y,c)).join('')}
+
+  <!-- left tree with the squirrel's hollow -->
+  <path d="M40 562 Q70 550 74 520 Q82 400 70 240 L118 240 Q108 400 118 520 Q124 550 156 562 Q110 568 98 550 Q86 570 40 562 Z" fill="#7A4E3D" stroke="#3B2A4A" stroke-width="3.5" stroke-linejoin="round"/>
+  <path d="M84 270 Q78 320 86 370 M104 420 Q110 470 102 520" fill="none" stroke="#5A3528" stroke-width="3" stroke-linecap="round"/>
+  <g class="sq-hollow"><ellipse cx="95" cy="334" rx="16" ry="21" fill="#5A3528" stroke="#3B2A4A" stroke-width="3"/><ellipse cx="95" cy="337" rx="10" ry="15" fill="#2B1E2E"/></g>
+  ${crownSVG([[90,70,50],[40,112,42],[150,100,46],[20,172,36],[100,150,52],[190,160,36],[60,212,34],[140,220,36],[200,214,24],[10,232,24]], ['#245C55','#2F7D6E','#45A08A','#7DD3B5'])}
+
+  <!-- right tree in pink blossom -->
+  <path d="M890 592 Q916 582 918 552 Q926 420 916 250 L954 250 Q948 420 958 552 Q962 582 994 592 Q952 598 940 582 Q928 600 890 592 Z" fill="#7A4E3D" stroke="#3B2A4A" stroke-width="3.5" stroke-linejoin="round"/>
+  <path d="M930 290 Q926 340 934 390 M944 440 Q950 490 942 540" fill="none" stroke="#5A3528" stroke-width="3" stroke-linecap="round"/>
+  ${crownSVG([[930,90,48],[870,132,40],[990,122,42],[850,192,34],[930,162,52],[1000,194,36],[880,236,32],[960,242,34],[822,242,22]], ['#8E3A6E','#C2558F','#EB86BA','#FFC2DF'])}
+
+  <!-- toadstool house -->
+  <g class="sq-house">
+    <path d="M176 482 Q168 424 182 374 L248 374 Q262 424 254 482 Z" fill="#FFF1D6" stroke="#3B2A4A" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M200 482 V448 Q215 428 230 448 V482 Z" fill="#9C6644" ${SQO}/>
+    <circle cx="224" cy="464" r="2.6" fill="#3B2A4A"/>
+    <circle cx="215" cy="402" r="30" fill="url(#sqGlow)" class="sq-tw"/>
+    <circle cx="215" cy="402" r="11" fill="#FFE27A" ${SQO}/>
+    <path d="M215 391 V413 M204 402 H226" stroke="#3B2A4A" stroke-width="2.4"/>
+    <path d="M138 382 Q148 302 215 296 Q282 302 292 382 Q215 362 138 382 Z" fill="#E8343B" stroke="#3B2A4A" stroke-width="3.5" stroke-linejoin="round"/>
+    ${[[170,350,9],[205,320,10],[248,330,8],[270,362,6],[160,372,5],[226,354,6]].map(([x,y,r])=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#fff"/>`).join('')}
+  </g>
+
+  ${[[180,262],[330,330],[470,284],[640,300],[760,258],[870,330],[262,424],[720,410],[540,384],[420,450]].map(([x,y],k)=>`<g class="sq-ff" style="animation-duration:${(4+k%3*1.3).toFixed(1)}s;animation-delay:${(-k*.7).toFixed(1)}s"><circle cx="${x}" cy="${y}" r="16" fill="url(#sqGlow)"/><circle cx="${x}" cy="${y}" r="3.5" fill="#FFFBE0"/></g>`).join('')}
+
+  <g id="sqMush"><g id="sqPos"><g id="sqFace"><g class="sq-trick" id="sqTrick"><g class="sq-bob">${SQUIRREL}</g></g></g></g></g>
+
+  <g class="sq-front">
+    <path d="M0 688 Q500 676 1000 688 V700 H0 Z" fill="#5FAE62"/>
+    ${[[30,702,1.3],[150,704,1],[330,702,1.1],[690,704,1],[860,702,1.2],[980,704,1.1]].map(([x,y,s],k)=>tuft(x,y,s,k%2?'#4F9F56':'#5FB462')).join('')}
+  </g>
+
+  <g class="sq-board" id="sqBoard">
+    <rect x="262" y="18" width="476" height="80" rx="40" fill="#FFF8EC" stroke="#3B2A4A" stroke-width="3.5"/>
+    ${Array.from({length:SQ_N},(_,i)=>`<g class="sq-ghost" transform="translate(${SQ_SLOT_X(i)} ${SQ_SLOT_Y}) scale(.62)"><path d="${MUSH_SIL}" fill="#3B2A4A" fill-opacity=".07" stroke="#B9A79A" stroke-width="3.5" stroke-dasharray="7 5"/></g>`).join('')}
+  </g>
+  <g id="sqTop"></g>
+</svg>`;
+document.getElementById('sqScene').innerHTML = sqScene;
+const sqSvg = document.getElementById('sqSvg');
+const sqPosEl = document.getElementById('sqPos'), sqFace = document.getElementById('sqFace'), sqTrickEl = document.getElementById('sqTrick');
+const SQ_COUNT = ['Один грибочок!','Два грибочки!','Три грибочки!','Чотири грибочки!',"П'ять грибочків!",'Шість грибочків!','Сім грибочків!','Вісім грибочків!'];
+let sqState = null, sqAt = {x:110, y:650, dir:1}, sqRaf = null, sqBusy = false, sqLast = 0, sqTricks = 0;
+
+function sqPlace(){
+  const s = sqScale(sqAt.y);
+  sqPosEl.setAttribute('transform', `translate(${sqAt.x.toFixed(1)} ${sqAt.y.toFixed(1)}) scale(${s.toFixed(3)})`);
+  sqFace.setAttribute('transform', sqAt.dir < 0 ? 'scale(-1 1)' : 'scale(1 1)');
+  // depth: the squirrel goes in front of mushrooms that are further back, behind nearer ones
+  const layer = sqPosEl.parentNode;
+  let before = null;
+  for(const g of layer.children){
+    if(g === sqPosEl) continue;
+    const m = sqState && sqState.mush[+g.dataset.k];
+    if(m && m.y > sqAt.y){ before = g; break; }
+  }
+  if(sqPosEl.nextSibling !== before) layer.insertBefore(sqPosEl, before);
+}
+function sqReplay(el, cls){
+  el.classList.remove('flip','pick','no','dance','call','shake','bounce');
+  void el.getBBox(); el.classList.add(cls);
+}
+function sqWalk(x, y, done, speed=.42){
+  cancelAnimationFrame(sqRaf);
+  if(Math.abs(x-sqAt.x) > 4) sqAt.dir = x > sqAt.x ? 1 : -1;
+  const sx = sqAt.x, sy = sqAt.y, dur = Math.max(220, Math.hypot(x-sx, y-sy)/speed), t0 = performance.now();
+  sqPosEl.classList.add('sq-walk');
+  const step = now => {
+    const t = Math.min(1, (now-t0)/dur);
+    sqAt.x = sx + (x-sx)*t; sqAt.y = sy + (y-sy)*t; sqPlace();
+    if(t < 1){ sqRaf = requestAnimationFrame(step); return; }
+    sqRaf = null; sqPosEl.classList.remove('sq-walk');
+    if(done) done();
+  };
+  sqRaf = requestAnimationFrame(step);
+}
+const sqClamp = (v,a,b) => Math.max(a, Math.min(b, v));
+
+function newSqGame(){
+  cancelAnimationFrame(sqRaf); sqRaf = null; sqBusy = false;
+  sqPosEl.classList.remove('sq-walk');
+  document.getElementById('sqTop').innerHTML = '';
+  document.getElementById('sqConfetti').innerHTML = '';
+  document.getElementById('sqWin').classList.remove('show');
+  sqSvg.querySelectorAll('.sq-ghost').forEach(g=>g.style.opacity='');
+  const spots = shuffle([...SQ_SPOTS]).slice(0, SQ_N);
+  const types = shuffle([0,0,1,1,2,2,3,3]);
+  sqState = {mush:[], got:0, won:false};
+  spots.forEach(([x,y],k)=>sqState.mush.push({x, y, type:types[k]}));
+  SQ_BAD.forEach(([x,y])=>sqState.mush.push({x, y, bad:true}));
+  sqState.mush.sort((a,b)=>a.y-b.y);   // nearer mushrooms are drawn on top
+  const layer = document.getElementById('sqMush');
+  layer.querySelectorAll('.mush').forEach(n=>n.remove());
+  layer.insertAdjacentHTML('afterbegin', sqState.mush.map((m,k)=>{
+    m.sc = 1.25*sqScale(m.y);
+    return `<g class="mush" data-k="${k}" style="transform:translate(${m.x}px,${m.y}px) scale(${m.sc.toFixed(3)})"><g class="mush-in" style="animation-delay:${(-Math.random()*3).toFixed(2)}s"><circle cx="0" cy="-30" r="40" fill="transparent"/>${m.bad ? AGARIC : MUSH_TYPES[m.type].art}</g></g>`;
+  }).join(''));
+  sqAt = {x:110, y:650, dir:1}; sqPlace();
+  sqLast = Date.now();
+  speak('Допоможи білочці зібрати грибочки! Натисни на грибочок.');
+}
+
+function sqGoMush(k){
+  const m = sqState.mush[k];
+  if(!m || m.taken || sqBusy) return;
+  const dir = m.x >= sqAt.x ? 1 : -1;
+  const tx = sqClamp(m.x - dir*66*sqScale(m.y), 50, 950), ty = Math.min(670, m.y + 6);
+  sqWalk(tx, ty, ()=>{ sqAt.dir = dir; sqPlace(); m.bad ? sqNope(k) : sqPick(k); });
+}
+function sqNope(k){
+  sqReplay(sqTrickEl, 'no');
+  sqReplay(sqSvg.querySelector(`.mush[data-k="${k}"] .mush-in`), 'no');
+  speak('Ой! Це мухомор. Його не беремо!');
+}
+function sqPick(k){
+  const m = sqState.mush[k];
+  m.taken = true; sqBusy = true;
+  const slot = sqState.got++;
+  const last = sqState.got === SQ_N;
+  if(last) sqState.won = true;
+  sqReplay(sqTrickEl, 'pick');
+  speak(MUSH_TYPES[m.type].name + '! ' + SQ_COUNT[slot]);
+  const el = sqSvg.querySelector(`.mush[data-k="${k}"]`);
+  setTimeout(()=>{
+    sqBusy = false;
+    el.firstElementChild.style.animation = 'none';
+    document.getElementById('sqTop').appendChild(el);
+    el.getBoundingClientRect();
+    el.style.transition = 'transform .32s cubic-bezier(.2,1.4,.5,1)';
+    el.style.transform = `translate(${m.x}px,${m.y-90}px) scale(${(m.sc*1.2).toFixed(3)})`;
+    setTimeout(()=>{
+      el.style.transition = 'transform .8s cubic-bezier(.45,0,.3,1)';
+      el.style.transform = `translate(${SQ_SLOT_X(slot)}px,${SQ_SLOT_Y}px) scale(.62)`;
+      setTimeout(()=>{
+        sqSvg.querySelectorAll('.sq-ghost')[slot].style.opacity = '0';
+        sqReplay(document.getElementById('sqBoard'), 'bounce');
+        if(last) setTimeout(sqWin, 500);
+      }, 820);
+    }, 360);
+  }, 260);
+}
+function sqWin(){
+  sqReplay(sqTrickEl, 'dance');
+  speak('Ура! Білочка зібрала всі грибочки! Молодець!');
+  setTimeout(()=>{
+    document.getElementById('sqWin').classList.add('show');
+    const cols = ['#FF5A5F','#FFB02E','#FF6F9C','#8BD45A','#9B5DE5','#FFD23F'];
+    document.getElementById('sqConfetti').innerHTML = Array.from({length:60},()=>`<i style="left:${Math.random()*100}%;background:${cols[Math.random()*cols.length|0]};animation-duration:${2+Math.random()*2}s;animation-delay:${Math.random()*.8}s;transform:rotate(${Math.random()*360}deg)"></i>`).join('');
+  }, 1300);
+}
+function sqTrick(){
+  if(sqBusy) return;
+  cancelAnimationFrame(sqRaf); sqRaf = null; sqPosEl.classList.remove('sq-walk');
+  if(sqTricks++ % 2 === 0){
+    sqReplay(sqTrickEl, 'flip');
+    speak(['Хі-хі! Я білочка-витівниця!','Опа! Сальто!'][(sqTricks>>1)%2]);
+  } else {
+    speak('Лови мене!');
+    let x, y;
+    do { x = 90 + Math.random()*820; y = 490 + Math.random()*175; } while(Math.abs(x-sqAt.x) < 250);
+    sqWalk(x, y, ()=>speak('Хі-хі!'), .8);
+  }
+}
+function sqPoint(e){
+  const p = sqSvg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
+  return p.matrixTransform(sqSvg.getScreenCTM().inverse());
+}
+
+sqSvg.addEventListener('pointerdown', e=>{
+  e.preventDefault();
+  sqLast = Date.now();
+  if(!sqState || sqState.won) return;
+  if(e.target.closest('#sqPos')){ sqTrick(); return; }
+  const m = e.target.closest('.mush');
+  if(m && m.parentNode.id === 'sqMush'){ sqGoMush(+m.dataset.k); return; }
+  if(e.target.closest('.sq-house')){ sqReplay(sqSvg.querySelector('.sq-house'), 'shake'); speak('Тук-тук! Тут живе гномик!'); return; }
+  if(e.target.closest('.sq-hollow')){ speak('Це дупло. Тут живе білочка!'); }
+  if(sqBusy) return;
+  const p = sqPoint(e);
+  sqWalk(sqClamp(p.x, 50, 950), sqClamp(p.y, 478, 668));
+});
+sqSvg.addEventListener('animationend', e=>{
+  const t = e.target;
+  if(t.classList && (t.classList.contains('mush-in') || t === sqTrickEl)) t.classList.remove('no','call','flip','pick','dance');
+});
+document.getElementById('sqAgain').addEventListener('click', newSqGame);
+// nudge: if nothing happens for a while, the nearest mushroom hops
+setInterval(()=>{
+  if(document.body.dataset.view !== 'squirrel' || !sqState || sqState.won || sqRaf || sqBusy) return;
+  if(Date.now() - sqLast < 10000) return;
+  sqLast = Date.now();
+  let best = -1, bd = 1e9;
+  sqState.mush.forEach((m,k)=>{ if(m.taken || m.bad) return; const d = Math.hypot(m.x-sqAt.x, m.y-sqAt.y); if(d < bd){ bd = d; best = k; } });
+  if(best < 0) return;
+  sqReplay(sqSvg.querySelector(`.mush[data-k="${best}"] .mush-in`), 'call');
+  speak('Ось грибочок! Натисни на нього!');
+}, 1000);
+
 /* ===== Find the colour (halves) ===== */
 const HCOL = {
   pink:['#FF8FC7','рожевий'], yellow:['#FFD93D','жовтий'], brown:['#9C6644','коричневий'],
@@ -2083,6 +2421,7 @@ function route(){
     if(k>=0){ show('halves'); loadPic(k); return; }
   }
   if(id==='eggs'){ show('eggs'); if(!eggState || eggState.found===9) newEggGame(); return; }
+  if(id==='squirrel'){ show('squirrel'); if(!sqState || sqState.won) newSqGame(); return; }
   const g = GAMES.find(x=>x.id===id);
   if(g){
     document.getElementById('soonTitle').textContent = g.name;
